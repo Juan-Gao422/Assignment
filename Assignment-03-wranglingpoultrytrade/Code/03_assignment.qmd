@@ -53,6 +53,7 @@ The dataset is obtained from the UN Comtrade database, an open-access repository
 
 library(dplyr)
 library(tidyr)
+library(ggplot2)
 
 PoultryData <- read.csv("../Data/03_assignment_data.csv")
 # glimpse(PoultryData)
@@ -63,14 +64,10 @@ PoultryDataClean <- PoultryData %>%
   mutate(
     qty_mg = qty/1000
     ) %>%
-  dplyr::select( # Keep columns with meaning variation, excluding those that are constant or duplicated in other columns
+  dplyr::select(
     ref_year,
     flow_desc, 
     partner_desc, 
-    classification_code, 
-    alt_qty_unit_code,
-    alt_qty_unit_abbr, 
-    alt_qty, 
     primary_value, 
     qty_mg
     ) %>%
@@ -142,7 +139,7 @@ The maximum trade value for imports was \$428214676 from Chile in 2022.
 
 ```{r}
 
-TopfiveCountry_2018 <- PoultryDataClean_Import %>%
+TopfiveCountry_Import_2018 <- PoultryDataClean_Import %>%
   filter(ref_year == 2018) %>%
   group_by(partner_desc) %>%
   summarise(
@@ -151,9 +148,9 @@ TopfiveCountry_2018 <- PoultryDataClean_Import %>%
   arrange(desc(qty)) %>%
   slice(1:5)
 
-TopfiveCountry_2018
+TopfiveCountry_Import_2018
   
-TopfiveCountry_2024 <- PoultryDataClean_Import %>%
+TopfiveCountry_Import_2024 <- PoultryDataClean_Import %>%
   filter(ref_year == 2024) %>%
   group_by(partner_desc) %>%
   summarise(
@@ -162,7 +159,7 @@ TopfiveCountry_2024 <- PoultryDataClean_Import %>%
   arrange(desc(qty)) %>%
   slice(1:5)
 
-TopfiveCountry_2024
+TopfiveCountry_Import_2024
 
 ```
 
@@ -200,7 +197,7 @@ Chile had the highest total export value (\$1532686723) to US.
 
 ```{r}
 
-TotalImportValue_Year <- PoultryDataClean_Import %>%
+TotalImportValue_Yearly <- PoultryDataClean_Import %>%
   dplyr::select(ref_year,
                 primary_value
                 ) %>%
@@ -208,7 +205,7 @@ TotalImportValue_Year <- PoultryDataClean_Import %>%
   summarise(Total_import_tradevalue = sum(primary_value)) %>%
   arrange(desc(Total_import_tradevalue))
 
-TotalImportValue_Year
+TotalImportValue_Yearly
 
 ```
 
@@ -220,24 +217,198 @@ The highest total import value (\$566412591) occurred in 2022.
 
 ```{r}
 
+TotalImportValue_Yearly_1 <- mutate(TotalImportValue_Yearly,
+                                    Total_import_tradevalue_million = Total_import_tradevalue/1000000)
 
+TotalImportValue_Yearly_1
+
+ggplot(data = TotalImportValue_Yearly_1,
+       aes(x = ref_year,
+           y = Total_import_tradevalue_million)
+       ) + 
+  geom_line(color = "black",
+                 linewidth = 1.5) +
+  geom_point(color = "black",
+             size = 3,
+             shape = 15) +
+  labs(x = "Year",
+       y = "Total Annual Import Value (Million USD)",
+       title = "Total Annual U.S. Poultry Import Value (2018–2024)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 12),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
+        )
 
 ```
+As shown in this figure, the total annual import value for the U.S. decreased from 2018 to 2019, and then increased steadily until 2022. After that, there was a sharp decrease in 2023, followed by a gradual increase in 2024.
 
 
 ## Exports:
 
 #### 7. How many distinct countries were there (based on given data), to where US was exporting the poultry products?
 
+```{r}
+
+PoultryDataClean_Export <- filter(PoultryDataClean,
+                              flow_desc == "Export",
+                              ref_year >= 2018,
+                              ref_year <= 2024
+                                  )
+
+PoultryDataClean_Export
+
+PoultryDataClean_Export_CountryNum <- n_distinct(PoultryDataClean_Export$partner_desc)
+
+PoultryDataClean_Export_CountryNum
+
+```
+
+Based on given data, from 2018-2024, US exported poultry products to 188 distinct countries. 
+
+
 #### 8. What are the minimum, maximum trade values for exports? Mention the country, year and its respective value.
+
+```{r}
+
+Tradevalues_Export <- PoultryDataClean_Export %>%
+  dplyr::select(
+                partner_desc,
+                ref_year,
+                primary_value
+                )
+
+Tradevalues_Export
+
+Tradevalues_Export_min <- arrange(
+                                  Tradevalues_Export,
+                                  primary_value
+                                  ) %>%
+  slice(1)
+
+Tradevalues_Export_min
+
+Tradevalues_Export_max <- arrange(
+                                  Tradevalues_Export, 
+                                  desc(primary_value)
+                                  ) %>%
+  slice(1)
+
+Tradevalues_Export_max
+
+```
+The minimum trade value for exports was \$2900 to Czechia in 2018.
+The maximum trade value for exports was \$1172550687 to Mexico in 2024.
+
 
 #### 9. Identify the top 5 countries to which the USA exported the most (qty) in the years 2018 and 2024. List the countries and their corresponding export values.
 
+```{r}
+
+TopfiveCountry_Export_2018 <- PoultryDataClean_Export %>%
+  filter(ref_year == 2018) %>%
+  group_by(partner_desc) %>%
+  summarise(
+    qty = sum(qty_mg),
+    tradevalue = sum(primary_value)) %>%
+  arrange(desc(qty)) %>%
+  slice(1:5)
+
+TopfiveCountry_Export_2018
+  
+TopfiveCountry_Export_2024 <- PoultryDataClean_Export %>%
+  filter(ref_year == 2024) %>%
+  group_by(partner_desc) %>%
+  summarise(
+    qty = sum(qty_mg),
+    tradevalue = sum(primary_value)) %>%
+  arrange(desc(qty)) %>%
+  slice(1:5)
+
+TopfiveCountry_Export_2024
+
+```
+The results are based on my understanding of this question. I understood "in the years 2018 and 2024" to mean that the top five country should be identified separately for 2018 and 2024, which is also more meaningful to compare. In addition, “import values” was interpreted as the primary trade value (primaryValue), rather than the values of physical quantity (qty).
+
+Based on the interpretation above:
+
+In 2018, the top five countries to which the USA exported the most are Mexico (\$763541266), China, Hong Kong SAR (\$412669749), Angola (\$183671360), Other Asia, nes	(\$188024792), and Cuba (\$154537803).
+
+In 2024, the top five countries to which the USA exported the most are Mexico (\$1172550687), Cuba (\$298231173), Other Asia, nes	(\$261812562), Philippines (\$187724475), and Canada (\$403487221).
+
+
 #### 10. Calculate the total export value for the USA from each country. Which country had the highest total import value **from** US, and what was that value?
+
+```{r}
+
+TotalExportValue_Country <- PoultryDataClean_Export %>%
+  dplyr::select(partner_desc,
+                primary_value
+                ) %>%
+  group_by(partner_desc) %>%
+  summarise(Total_export_tradevalue = sum(primary_value)) %>%
+  arrange(desc(Total_export_tradevalue))
+
+TotalExportValue_Country
+
+
+```
+
+The results are based on my understanding of this question. The “export value” was interpreted as the primary trade value (primaryValue). The question was asking years from 2018 to 2024.
+
+Mexico had the highest total import value (\$6823047519) from US.
 
 #### 11. Calculate the total export value for the USA in each year from 2018 to 2025. Which year had the highest total export value, and what was that value?
 
+```{r}
+
+TotalExportValue_Yearly <- PoultryDataClean_Export %>%
+  dplyr::select(ref_year,
+                primary_value
+                ) %>%
+  group_by(ref_year) %>%
+  summarise(Total_export_tradevalue = sum(primary_value)) %>%
+  arrange(desc(Total_export_tradevalue))
+
+TotalExportValue_Yearly
+
+```
+
+Based on the provided dataset, the available data cover the years 2018 to 2024 only.
+
+The highest total export value (\$5401343250) occurred in 2022.
+
 #### 12. Plot a line graph showing the total annual export value for the USA from 2018 to 2024. Describe any noticeable trends or patterns (e.g., increases, decreases, or fluctuations) in the graph. Create a publication ready plot.
+
+```{r}
+
+TotalExportValue_Yearly_1 <- mutate(TotalExportValue_Yearly,
+                                    Total_export_tradevalue_million = Total_export_tradevalue/1000000)
+
+TotalExportValue_Yearly_1
+
+ggplot(data = TotalExportValue_Yearly_1,
+       aes(x = ref_year,
+           y = Total_export_tradevalue_million)
+       ) + 
+  geom_line(color = "black",
+                 linewidth = 1.5) +
+  geom_point(color = "black",
+             size = 3) +
+  labs(x = "Year",
+       y = "Total Annual Export Value (Million USD)",
+       title = "Total Annual U.S. Poultry Export Value (2018–2024)") +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text = element_text(size = 12),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 1)
+        )
+
+```
+As shown in this figure, the total annual export value for the U.S. increased gradually from 2018 to 2020, followed by a sharp increase until 2022. After 2022, the export value decreased sharply in 2023 and then declined slightly in 2024.
+
 
 ## Imports - Exports Comparision:
 
