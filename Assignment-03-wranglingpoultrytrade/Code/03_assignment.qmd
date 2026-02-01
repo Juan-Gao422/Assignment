@@ -415,10 +415,57 @@ As shown in this figure, the total annual export value for the U.S. increased gr
 #### 13. Does the U.S. behave more as a net importer or net exporter for this commodity? Explore it:
 
 -   Based on total value US imports and exports.
+
+```{r}
+
+TotalValue <- PoultryDataClean %>%
+  group_by(flow_desc) %>%
+  summarise(sum(primary_value))
+
+TotalValue
+
+```
+
+The total values of U.S. exports and imports from 2018 to 2024 were \$31042194412 and \$2427597118, respectively. Based on these data, the United States was a net exporter of poultry products during this period.
+
 -   Based on number of countries US imports and exports
+
+```{r}
+
+TotalCountryNumber <- PoultryDataClean %>%
+  group_by(flow_desc) %>%
+  summarise(countrynumber = n_distinct(partner_desc))
+
+TotalCountryNumber
+
+```
+
+The number of countries of U.S. exports and imports from 2018 to 2024 were 188 and 7, respectively. Based on these data, the United States was a net exporter of poultry products during this period.
+
 -   Based on each year's import export value.
 
+```{r}
+
+Annualvalues <- PoultryDataClean %>%
+  group_by(flow_desc,
+            ref_year) %>%
+  summarise(primary_value_annually = sum(primary_value)) %>%
+  pivot_wider(names_from = flow_desc,
+              values_from = primary_value_annually
+              )
+
+Annualvalues
+
+```
+
+From 2018 to 2024, the U.S. export values were consistently greater than import values, indicating that the U.S. was a net exporter of poultry products during this period.
+
 #### 14. Are the main import partners also major export destinations? Explore it based on the total import export value by countries.
+
+```{r}
+
+```
+
 
 #### 15. Can you calculate if US is in trade surplus or trade deficit for each year from 2018-2024?
 
